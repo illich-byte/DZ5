@@ -13,7 +13,12 @@ public class CountriesController(ICountryService countryService)
     public async Task<IActionResult> GetCountries()
     {
         var list = await countryService.GetListAsync();
+<<<<<<< HEAD
         return Ok(list);
+=======
+        // Implementation to retrieve and return countries would go here.
+        return Ok(list); //код 200
+>>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
     }
 
     [HttpPost]
@@ -22,6 +27,10 @@ public class CountriesController(ICountryService countryService)
         var item = await countryService.CreateAsync(model);
 
         return CreatedAtAction(null, item);
+<<<<<<< HEAD
+=======
+        //return Created(item); //код 201
+>>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
     }
 
     [HttpDelete("{id}")]

@@ -2,12 +2,19 @@
 using Domain;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+<<<<<<< HEAD
 using Microsoft.AspNetCore.Http;
+=======
+>>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
 
 namespace Core.Validators.Country;
 
 public class CountryCreateValidator : AbstractValidator<CountryCreateModel>
+<<<<<<< HEAD
 {
+=======
+{ 
+>>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
     public CountryCreateValidator(AppDbTransferContext db)
     {
         RuleFor(x => x.Name)
@@ -30,6 +37,7 @@ public class CountryCreateValidator : AbstractValidator<CountryCreateModel>
             .MaximumLength(100).WithMessage("Slug країни не може перевищувати 100 символів");
 
         RuleFor(x => x.Image)
+<<<<<<< HEAD
             .NotNull().WithMessage("Файл зображення є обов'язковим")
             .Must(BeAValidFileSize).WithMessage("Розмір файлу не повинен перевищувати 5MB.")
             .Must(BeAValidFileType).WithMessage("Дозволені формати файлів: JPG, PNG, GIF.");
@@ -46,3 +54,8 @@ public class CountryCreateValidator : AbstractValidator<CountryCreateModel>
         return allowedTypes.Contains(file.ContentType.ToLower());
     }
 }
+=======
+            .NotEmpty().WithMessage("Файл зображення є обов'язковим");
+    }
+}
+>>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26

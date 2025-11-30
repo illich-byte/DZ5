@@ -57,6 +57,7 @@ namespace Domain.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblCountries");
+<<<<<<< HEAD
 
                     b.HasData(
                         new
@@ -99,6 +100,8 @@ namespace Domain.Migrations
                             Name = "Чехія",
                             Slug = "czech-republic"
                         });
+=======
+>>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
                 });
 #pragma warning restore 612, 618
         }
