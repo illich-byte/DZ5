@@ -1,0 +1,293 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управління Країнами (API-Demo)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .h-fit {
+            height: fit-content;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <div class="container mx-auto p-4 sm:p-8">
+        <h1 class="text-4xl font-extrabold text-indigo-700 mb-6 border-b pb-2">
+            Управління Країнами (API-Demo)
+        </h1>
+
+        <div id="messages" class="mb-6 space-y-4"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <div class="lg:col-span-1 p-6 bg-white shadow-xl rounded-xl h-fit sticky top-4">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Створити Нову Країну</h2>
+
+                <form id="create-form" class="space-y-4">
+
+                    <div class="flex flex-col">
+                        <label for="name" class="text-sm font-medium text-gray-600 mb-1">Назва країни</label>
+                        <input type="text" id="name" name="Name"
+                               class="p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Наприклад, Україна" required>
+                        <p id="error-Name" class="text-red-500 text-xs mt-1"></p>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="code" class="text-sm font-medium text-gray-600 mb-1">Код (2 літери)</label>
+                        <input type="text" id="code" name="Code"
+                               class="p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Наприклад, UA" maxlength="2" required>
+                        <p id="error-Code" class="text-red-500 text-xs mt-1"></p>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="slug" class="text-sm font-medium text-gray-600 mb-1">Slug (URL частина)</label>
+                        <input type="text" id="slug" name="Slug"
+                               class="p-2 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                               placeholder="Наприклад, ukraine" required>
+                        <p id="error-Slug" class="text-red-500 text-xs mt-1"></p>
+                    </div>
+
+                    <div class="flex flex-col">
+                        <label for="image" class="text-sm font-medium text-gray-600 mb-1">Файл Прапора (JPG/PNG/GIF)</label>
+                        <input type="file" id="image" name="Image"
+                               class="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                               accept="image/*" required>
+                        <p id="error-Image" class="text-red-500 text-xs mt-1"></p>
+                    </div>
+
+                    <button type="submit" id="submit-button"
+                            class="w-full py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition duration-150">
+                        Створити Країну
+                    </button>
+
+                </form>
+            </div>
+
+            <div class="lg:col-span-2">
+                <div id="loading" class="flex justify-center items-center h-48 hidden">
+                    <svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="ml-3 text-lg text-indigo-600">Завантаження країн...</span>
+                </div>
+
+                <div id="countries-list" class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                </div>
+
+                <div id="empty-state" class="p-6 text-center bg-yellow-100 border-dashed border-2 border-yellow-400 rounded-xl text-yellow-800 hidden mt-6">
+                    <p class="text-xl font-semibold">Наразі країн немає.</p>
+                    <p class="text-sm">Скористайтеся формою зліва, щоб додати першу.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://localhost:7154';
+        const API_URL = `${API_BASE_URL}/api/Countries`;
+
+        const countriesList = document.getElementById('countries-list');
+        const createForm = document.getElementById('create-form');
+        const submitButton = document.getElementById('submit-button');
+        const messagesContainer = document.getElementById('messages');
+        const loadingSpinner = document.getElementById('loading');
+        const emptyState = document.getElementById('empty-state');
+
+        
+        function showMessage(type, content) {
+            const id = `msg-${Date.now()}`;
+            const classes = type === 'success'
+                ? 'bg-green-100 border-l-4 border-green-500 text-green-700'
+                : 'bg-red-100 border-l-4 border-red-500 text-red-700';
+
+            const messageHtml = `
+                <div id="${id}" class="${classes} p-4 rounded-lg flex justify-between items-center transition-opacity duration-300">
+                    <div>
+                        <p class="font-bold">${type === 'success' ? 'Успіх!' : 'Помилка API!'}</p>
+                        <p>${content}</p>
+                    </div>
+                    <button onclick="document.getElementById('${id}').remove()" class="text-gray-500 hover:text-gray-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+            `;
+            messagesContainer.insertAdjacentHTML('afterbegin', messageHtml);
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (el) el.style.opacity = '0';
+                    setTimeout(() => el?.remove(), 300);
+                }, 5000);
+            }
+        }
+
+        function clearFormErrors() {
+            document.querySelectorAll('[id^="error-"]').forEach(el => el.textContent = '');
+        }
+оказує помилки валідації, повернуті з API (400 Bad Request).
+         */
+        function showFormErrors(errors) {
+            clearFormErrors();
+            if (errors && Array.isArray(errors)) {
+                errors.forEach(error => {
+                    const errorElement = document.getElementById(`error-${error.fieldName}`);
+                    if (errorElement) {
+                        errorElement.textContent = error.message;
+                    }
+                });
+            } else {
+                 showMessage('error', 'Виникла невідома помилка валідації.');
+            }
+        }
+
+        function renderCountryCard(country) {
+            const imageUrl = country.image
+                ? `${API_BASE_URL}/${country.image}`
+                : 'https://placehold.co/64x48/6366f1/ffffff?text=NO+FLAG';
+
+            return `
+                <div id="country-${country.id}" class="bg-white rounded-xl shadow-lg overflow-hidden transition transform hover:scale-[1.02] duration-300">
+                    <div class="p-4 flex items-center">
+                        <!-- Зображення прапора -->
+                        <img src="${imageUrl}"
+                             class="w-16 h-12 object-cover rounded-md border shadow mr-4"
+                             alt="Flag of ${country.name}"
+                             onerror="this.onerror=null; this.src='https://placehold.co/64x48/6366f1/ffffff?text=NO+FLAG'"
+                        >
+
+                        <div class="flex-grow">
+                            <h3 class="text-xl font-bold text-gray-800">${country.name}</h3>
+                            <div class="flex space-x-4 text-sm text-gray-500">
+                                <span class="font-mono bg-gray-100 px-2 py-0.5 rounded">${country.code}</span>
+                                <span class="truncate">/${country.slug}</span>
+                            </div>
+                        </div>
+
+                        <!-- Кнопка Delete -->
+                        <button onclick="deleteCountry(${country.id}, '${country.name}')"
+                                class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition duration-150"
+                                title="Видалити країну">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        
+        async function fetchCountries() {
+            loadingSpinner.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            countriesList.innerHTML = '';
+            messagesContainer.innerHTML = ''; 
+
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const countries = await response.json();
+
+                if (countries.length === 0) {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    const html = countries.map(renderCountryCard).join('');
+                    countriesList.innerHTML = html;
+                }
+
+            } catch (error) {
+                console.error("Помилка завантаження країн:", error);
+                showMessage('error', `Не вдалося завантажити список країн. Перевірте, чи запущений ваш API на ${API_BASE_URL}.`);
+            } finally {
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        async function deleteCountry(id, name) {
+            if (!confirm(`Ви впевнені, що хочете видалити країну "${name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (response.status === 204) {
+                    showMessage('success', `Країна "${name}" успішно видалена.`);
+                    document.getElementById(`country-${id}`).remove();
+
+                    if (countriesList.children.length === 0) {
+                        emptyState.classList.remove('hidden');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    showMessage('error', `Не вдалося видалити країну: ${errorText || response.statusText}`);
+                }
+            } catch (error) {
+                console.error("Помилка видалення:", error);
+                showMessage('error', 'Виникла помилка мережі при видаленні країни.');
+            }
+        }
+я.
+        createForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearFormErrors();
+            submitButton.disabled = true;
+            submitButton.textContent = 'Створення...';
+
+            const formData = new FormData(createForm);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData 
+                });
+
+                if (response.ok) {
+                    const newCountry = await response.json();
+
+                    countriesList.insertAdjacentHTML('beforeend', renderCountryCard(newCountry));
+
+                    showMessage('success', `Країна "${newCountry.name}" успішно створена!`);
+                    createForm.reset();
+                    emptyState.classList.add('hidden'); 
+                } else if (response.status === 400) {
+                    const errorData = await response.json();
+                    if (errorData.errors) {
+                        showFormErrors(errorData.errors);
+                        showMessage('error', 'Помилка валідації. Перевірте поля форми.');
+                    } else {
+                        const errorText = JSON.stringify(errorData);
+                        showMessage('error', `Помилка запиту: ${errorText}`);
+                    }
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! Status: ${response.status}. Message: ${errorText}`);
+                }
+
+            } catch (error) {
+                console.error("Помилка створення країни:", error);
+                showMessage('error', error.message || 'Виникла невідома помилка мережі.');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Створити Країну';
+            }
+        });
+
+        window.onload = () => {
+            fetchCountries();
+            window.deleteCountry = deleteCountry;
+            lucide.createIcons();
+        };
+
+    </script>
+</body>
+</html>

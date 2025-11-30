@@ -1,0 +1,771 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управління Містами</title>
+    <!-- Завантаження Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Встановлення шрифту Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Стиль для кращої видимості іконок */
+        .action-icon {
+            width: 20px;
+            height: 20px;
+            min-width: 20px; /* Для забезпечення розміру на мобільному */
+        }
+        /* Стиль для модального вікна деталей */
+        .detail-card {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .detail-header {
+            background-color: #4f46e5;
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-body {
+            padding: 1.5rem;
+        }
+
+        .detail-item {
+            display: flex;
+            margin-bottom: 0.75rem;
+            flex-direction: column; /* Стовпець на мобільному */
+            align-items: flex-start;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #4b5563;
+            width: 100%; /* Повна ширина на мобільному */
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            color: #1f2937;
+            flex-grow: 1;
+        }
+
+        @media (min-width: 640px) {
+            .detail-item {
+                flex-direction: row; /* Рядок на десктопі */
+                align-items: center;
+            }
+
+            .detail-label {
+                width: 150px;
+                margin-bottom: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="p-4 sm:p-8 min-h-screen">
+        <!-- Головний контейнер -->
+        <div class="max-w-6xl mx-auto">
+
+            <!-- Заголовок та кнопка створення -->
+            <header class="mb-8 flex justify-between items-center bg-white p-4 rounded-xl shadow-lg">
+                <h1 class="text-xl sm:text-3xl font-bold text-gray-900">
+                    Список Міст (ASP.NET DTO Simulation)
+                </h1>
+                <button id="create-city-btn"
+                        class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 flex items-center text-sm">
+                    <!-- Іконка Plus (SVG) -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon mr-1"><path d="M5 12h14" /><path d="M12 5v14" /></svg>
+                    Створити
+                </button>
+            </header>
+
+            <!-- Контейнер для таблиці або повідомлень -->
+            <div id="city-list-container" class="bg-white rounded-xl shadow-2xl overflow-hidden">
+                <!-- Контент буде завантажено тут JavaScript'ом -->
+                <div id="loading-spinner" class="p-12 text-center text-indigo-600">
+                    <div class="animate-spin inline-block w-8 h-8 border-4 border-t-transparent border-indigo-500 rounded-full" role="status"></div>
+                    <p class="mt-3">Завантаження даних міст...</p>
+                </div>
+            </div>
+
+            <!-- Область для повідомлень (використовується замість alert()) -->
+            <div id="message-box" class="fixed bottom-4 right-4 p-4 rounded-lg text-white shadow-xl hidden transition-opacity duration-300 z-50"></div>
+
+        </div>
+    </div>
+
+    <!-- Модальне вікно для створення/редагування міста -->
+    <div id="city-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-40 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-lg m-4 transform transition-all duration-300 scale-95 opacity-0">
+            <h2 id="modal-title" class="text-2xl font-bold mb-4 text-gray-800">Створити Нове Місто</h2>
+            <form id="city-form">
+                <input type="hidden" id="city-id" value="">
+
+                <!-- Поле Назва -->
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Назва Міста *</label>
+                    <input type="text" id="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Наприклад, Львів">
+                </div>
+
+                <!-- Поле Slug -->
+                <div class="mb-4">
+                    <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Slug (URL-адреса) *</label>
+                    <input type="text" id="slug" required class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Наприклад, lviv">
+                </div>
+
+                <!-- Поле Країна (Для простоти, симулюємо селект) -->
+                <div class="mb-4">
+                    <label for="countryId" class="block text-sm font-medium text-gray-700 mb-1">Країна *</label>
+                    <select id="countryId" required class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="1">Україна</option>
+                        <option value="2">Польща</option>
+                        <option value="3">Німеччина</option>
+                    </select>
+                </div>
+
+                <!-- Поле Опис -->
+                <div class="mb-4">
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Опис</label>
+                    <textarea id="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="Короткий опис міста..."></textarea>
+                </div>
+
+                <!-- Поле Image Link -->
+                <div class="mb-6">
+                    <label for="imageLink" class="block text-sm font-medium text-gray-700 mb-1">Посилання на Зображення</label>
+                    <input type="url" id="imageLink" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="http://example.com/image.jpg">
+                </div>
+
+                <!-- Кнопки дій -->
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition duration-150">
+                        Скасувати
+                    </button>
+                    <button type="submit" id="save-city-btn" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150">
+                        Зберегти Місто
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальне вікно для відображення деталей міста (замість окремої сторінки) -->
+    <div id="detail-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50 hidden">
+        <div class="detail-card transform transition-all duration-300 scale-95 opacity-0">
+            <div class="detail-header">
+                <h2 id="detail-title" class="text-xl font-semibold">Деталі Міста</h2>
+                <button onclick="closeDetailModal()" class="text-white hover:text-indigo-200 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="action-icon"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.3 14.7L12 13.4l-3.3 3.3-1.4-1.4L10.6 12 7.3 8.7l1.4-1.4L12 10.6l3.3-3.3 1.4 1.4L13.4 12l3.3 3.3-1.4 1.4z" /></svg>
+                </button>
+            </div>
+            <div class="detail-body">
+                <div id="detail-content">
+                    <div class="text-center py-6 text-gray-500">Завантаження деталей...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // =================================================================
+        // 1. DTO ІНТЕРФЕЙСИ (СХОЖІ НА ВАШІ C# МОДЕЛІ)
+        // =================================================================
+
+        /**
+         * @typedef {object} CityItemModel - Модель для відображення елемента в списку.
+         * @property {number} id
+         * @property {string} name
+         * @property {string} countryName
+         * @property {string} slug
+         */
+
+        /**
+         * @typedef {object} CityDetailModel - Модель для повних деталей міста.
+         * @property {number} id
+         * @property {string} name
+         * @property {string} slug
+         * @property {string | null} description
+         * @property {string | null} imageLink
+         * @property {number} countryId
+         * @property {string} countryName
+         * @property {Date} updatedAt
+         */
+
+        /**
+         * @typedef {object} CityCreateModel - Модель для створення міста.
+         * @property {string} name
+         * @property {string} slug
+         * @property {string | null} description
+         * @property {string | null} imageLink
+         * @property {number} countryId
+         */
+
+        /**
+         * @typedef {object} CityUpdateModel - Модель для оновлення міста.
+         * @property {string} name
+         * @property {string} slug
+         * @property {string | null} description
+         * @property {string | null} imageLink
+         * @property {number} countryId
+         */
+
+
+        // =================================================================
+        // 2. СИМУЛЯЦІЯ СЛУЖБИ (SERVICE)
+        // =================================================================
+
+        /**
+         * @type {CityDetailModel[]}
+         */
+        let mockCities = [
+            { id: 1, name: 'Львів', slug: 'lviv', description: 'Культурна столиця України. Відомий своїми кав\'ярнями та архітектурою.', imageLink: 'https://placehold.co/150x100/3B82F6/FFFFFF?text=Lviv', countryId: 1, countryName: 'Україна', updatedAt: new Date(Date.now() - 3600000) },
+            { id: 2, name: 'Київ', slug: 'kyiv', description: 'Столиця України, велике історичне місто на Дніпрі.', imageLink: 'https://placehold.co/150x100/10B981/FFFFFF?text=Kyiv', countryId: 1, countryName: 'Україна', updatedAt: new Date(Date.now() - 7200000) },
+            { id: 3, name: 'Варшава', slug: 'warsaw', description: 'Столиця Польщі та найбільше місто, важливий економічний центр.', imageLink: 'https://placehold.co/150x100/F97316/FFFFFF?text=Waw', countryId: 2, countryName: 'Польща', updatedAt: new Date(Date.now() - 10800000) }
+        ];
+        let nextCityId = 4; // Лічильник для нових ID
+
+        // Симуляція мапінгу ID країни до назви (для відображення в списку та оновлення)
+        const countryMap = {
+            1: 'Україна',
+            2: 'Польща',
+            3: 'Німеччина'
+        };
+
+
+        /**
+         * Симулює запит GET /api/cities.
+         * @returns {Promise<CityItemModel[]>}
+         */
+        const getCities = () => new Promise(resolve => {
+            setTimeout(() => {
+                // Сортуємо міста за ID для стабільного відображення
+                const sortedCities = [...mockCities].sort((a, b) => a.id - b.id);
+                const items = sortedCities.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    countryName: c.countryName,
+                    slug: c.slug
+                }));
+                resolve(items);
+            }, 500); // Симуляція затримки мережі
+        });
+
+        /**
+         * Симулює запит GET /api/cities/{id}.
+         * @param {number} id
+         * @returns {Promise<CityDetailModel>}
+         */
+        const getCityById = (id) => new Promise((resolve, reject) => {
+            setTimeout(() => {
+                const city = mockCities.find(c => c.id === id);
+                if (city) {
+                    resolve(city);
+                } else {
+                    reject(new Error("Місто не знайдено (404)."));
+                }
+            }, 300);
+        });
+
+        /**
+         * Симулює запит POST /api/cities.
+         * @param {CityCreateModel} newCityData
+         * @returns {Promise<CityDetailModel>}
+         */
+        const createCity = (newCityData) => new Promise(resolve => {
+            setTimeout(() => {
+                const newCity = {
+                    ...newCityData,
+                    id: nextCityId++,
+                    countryName: countryMap[newCityData.countryId],
+                    updatedAt: new Date()
+                };
+                mockCities.push(newCity);
+                resolve(newCity);
+            }, 500);
+        });
+
+        /**
+         * Симулює запит PUT /api/cities/{id}.
+         * @param {number} id
+         * @param {CityUpdateModel} updatedCityData
+         * @returns {Promise<CityDetailModel>}
+         */
+        const updateCity = (id, updatedCityData) => new Promise((resolve, reject) => {
+            setTimeout(() => {
+                const index = mockCities.findIndex(c => c.id === id);
+                if (index !== -1) {
+                    const updatedCity = {
+                        ...mockCities[index],
+                        ...updatedCityData,
+                        // Забезпечуємо оновлення країни, якщо вона змінилася
+                        countryName: countryMap[updatedCityData.countryId],
+                        updatedAt: new Date()
+                    };
+                    mockCities[index] = updatedCity;
+                    resolve(updatedCity);
+                } else {
+                    reject(new Error("Місто для оновлення не знайдено (404)."));
+                }
+            }, 500);
+        });
+
+
+        /**
+         * Симулює запит DELETE /api/cities/{id}.
+         * @param {number} id
+         * @returns {Promise<void>}
+         */
+        const deleteCity = (id) => new Promise((resolve, reject) => {
+            setTimeout(() => {
+                const initialLength = mockCities.length;
+                mockCities = mockCities.filter(c => c.id !== id);
+                if (mockCities.length < initialLength) {
+                    resolve();
+                } else {
+                    reject(new Error("Місто не знайдено."));
+                }
+            }, 300);
+        });
+
+        // =================================================================
+        // 3. ДОПОМІЖНІ ФУНКЦІЇ UI ТА МОДАЛЬНОГО ВІКНА
+        // =================================================================
+
+        const cityListContainer = document.getElementById('city-list-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const messageBox = document.getElementById('message-box');
+        const cityModal = document.getElementById('city-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const cityForm = document.getElementById('city-form');
+        const cityIdInput = document.getElementById('city-id');
+        const nameInput = document.getElementById('name');
+        const slugInput = document.getElementById('slug');
+        const countryIdSelect = document.getElementById('countryId');
+        const descriptionTextarea = document.getElementById('description');
+        const imageLinkInput = document.getElementById('imageLink');
+        const detailModal = document.getElementById('detail-modal');
+        const detailModalContent = document.getElementById('detail-content');
+        const detailModalTitle = document.getElementById('detail-title');
+
+
+        /**
+         * Показує повідомлення користувачу (замість alert()).
+         * @param {string} message Текст повідомлення.
+         * @param {string} type Тип: 'success' або 'error'.
+         */
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = 'fixed bottom-4 right-4 p-4 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50';
+
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-600');
+            } else {
+                messageBox.classList.add('bg-red-600');
+            }
+
+            // Показуємо
+            messageBox.classList.remove('hidden');
+            setTimeout(() => messageBox.classList.add('opacity-100'), 10);
+
+            // Приховуємо через 3 секунди
+            setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                setTimeout(() => messageBox.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        /**
+         * Відкриває модальне вікно форми.
+         */
+        function openModal() {
+            cityModal.classList.remove('hidden');
+            // Анімація появи
+            setTimeout(() => {
+                cityModal.querySelector('div').classList.remove('scale-95', 'opacity-0');
+                cityModal.querySelector('div').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        /**
+         * Закриває модальне вікно форми та очищує форму.
+         */
+        function closeModal() {
+            cityModal.querySelector('div').classList.remove('scale-100', 'opacity-100');
+            cityModal.querySelector('div').classList.add('scale-95', 'opacity-0');
+
+            // Затримка, щоб дочекатися завершення анімації
+            setTimeout(() => {
+                cityModal.classList.add('hidden');
+                cityForm.reset(); // Очистити форму
+                cityIdInput.value = ''; // Забезпечити очищення ID
+                modalTitle.textContent = 'Створити Нове Місто'; // Скинути заголовок
+            }, 300);
+        }
+
+        /**
+         * Відкриває модальне вікно деталей.
+         */
+        function openDetailModal() {
+            detailModal.classList.remove('hidden');
+            // Анімація появи
+            setTimeout(() => {
+                detailModal.querySelector('.detail-card').classList.remove('scale-95', 'opacity-0');
+                detailModal.querySelector('.detail-card').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        /**
+         * Закриває модальне вікно деталей.
+         */
+        function closeDetailModal() {
+            detailModal.querySelector('.detail-card').classList.remove('scale-100', 'opacity-100');
+            detailModal.querySelector('.detail-card').classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                detailModal.classList.add('hidden');
+                detailModalContent.innerHTML = '<div class="text-center py-6 text-gray-500">Завантаження деталей...</div>';
+            }, 300);
+        }
+
+
+        /**
+         * Рендерить іконку SVG для дій.
+         * @param {string} pathData SVG path data.
+         * @returns {string} HTML рядок SVG.
+         */
+        function renderIcon(pathData) {
+            return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-icon">
+                    ${pathData}
+                </svg>
+            `;
+        }
+
+        /**
+         * Створює рядок таблиці для одного міста.
+         * @param {CityItemModel} city
+         * @returns {string} HTML рядок <tr>
+         */
+        function createCityRow(city) {
+            const viewIcon = renderIcon('<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>');
+            const editIcon = renderIcon('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>');
+            const deleteIcon = renderIcon('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>');
+
+            return `
+                <tr class="hover:bg-gray-50 transition duration-150" data-city-id="${city.id}">
+                    <td class="px-4 py-3 sm:px-6 whitespace-nowrap text-sm font-medium text-gray-900">${city.id}</td>
+                    <td class="px-4 py-3 sm:px-6 whitespace-nowrap text-sm text-gray-700">
+                        <div class="font-semibold">${city.name}</div>
+                    </td>
+                    <td class="px-4 py-3 sm:px-6 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">${city.slug}</td>
+                    <td class="px-4 py-3 sm:px-6 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">${city.countryName}</td>
+                    <td class="px-4 py-3 sm:px-6 whitespace-nowrap text-right text-sm font-medium">
+                        <div class="flex justify-end space-x-1 sm:space-x-2">
+                            <button onclick="handleView(${city.id})" class="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50 transition duration-150" title="Переглянути деталі">
+                                ${viewIcon}
+                            </button>
+                            <button onclick="handleEdit(${city.id})" class="text-yellow-600 hover:text-yellow-900 p-1 rounded hover:bg-yellow-50 transition duration-150" title="Редагувати">
+                                ${editIcon}
+                            </button>
+                            <button onclick="handleDelete(${city.id})" class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition duration-150" title="Видалити">
+                                ${deleteIcon}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        /**
+         * Рендерить всю таблицю міст.
+         * @param {CityItemModel[]} cities
+         */
+        function renderCityList(cities) {
+            cityListContainer.innerHTML = ''; // Очистити контейнер
+
+            if (cities.length === 0) {
+                cityListContainer.innerHTML = `
+                    <div class="p-12 text-center bg-yellow-50 text-yellow-800 rounded-xl">
+                        <h3 class="text-xl font-semibold mb-2">Немає даних</h3>
+                        <p>Наразі жодного міста не додано. Натисніть "Створити", щоб почати.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-indigo-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3 sm:px-6 text-left text-xs font-medium text-indigo-700 uppercase tracking-wider">ID</th>
+                                <th scope="col" class="px-4 py-3 sm:px-6 text-left text-xs font-medium text-indigo-700 uppercase tracking-wider">Назва Міста</th>
+                                <th scope="col" class="px-4 py-3 sm:px-6 text-left text-xs font-medium text-indigo-700 uppercase tracking-wider hidden sm:table-cell">Slug</th>
+                                <th scope="col" class="px-4 py-3 sm:px-6 text-left text-xs font-medium text-indigo-700 uppercase tracking-wider hidden md:table-cell">Країна</th>
+                                <th scope="col" class="relative px-4 py-3 sm:px-6"><span class="sr-only">Дії</span></th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            ${cities.map(createCityRow).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            cityListContainer.innerHTML = tableHtml;
+        }
+
+        /**
+         * Рендерить деталі міста в модальному вікні.
+         * @param {CityDetailModel} city
+         */
+        function renderCityDetails(city) {
+            const formattedDate = city.updatedAt ? new Date(city.updatedAt).toLocaleString('uk-UA', { dateStyle: 'medium', timeStyle: 'short' }) : 'Невідомо';
+
+            detailModalContent.innerHTML = `
+                <div class="space-y-4">
+                    <div class="text-center mb-4">
+                        <img src="${city.imageLink || 'https://placehold.co/150x100/AAAAAA/FFFFFF?text=No+Image'}"
+                             onerror="this.onerror=null;this.src='https://placehold.co/150x100/AAAAAA/FFFFFF?text=No+Image';"
+                             alt="Зображення міста ${city.name}" class="rounded-lg mx-auto shadow-md max-w-full h-auto">
+                    </div>
+
+                    <div class="detail-item">
+                        <span class="detail-label">ID:</span>
+                        <span class="detail-value font-mono bg-gray-100 px-2 py-1 rounded text-sm">${city.id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Назва:</span>
+                        <span class="detail-value font-semibold">${city.name}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Slug:</span>
+                        <span class="detail-value">${city.slug}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Країна:</span>
+                        <span class="detail-value">${city.countryName} (ID: ${city.countryId})</span>
+                    </div>
+                    <div class="detail-item flex-col !items-start">
+                        <span class="detail-label">Опис:</span>
+                        <span class="detail-value mt-1">${city.description || 'Опис відсутній.'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Останнє оновлення:</span>
+                        <span class="detail-value">${formattedDate}</span>
+                    </div>
+                </div>
+            `;
+            detailModalTitle.textContent = `Деталі Міста: ${city.name}`;
+        }
+
+
+        // =================================================================
+        // 4. ОБРОБНИКИ ДІЙ CRUD
+        // =================================================================
+
+        /**
+         * Обробляє клік по кнопці "Переглянути".
+         * @param {number} id
+         */
+        async function handleView(id) {
+            openDetailModal();
+            detailModalContent.innerHTML = '<div class="text-center py-6 text-indigo-600"><div class="animate-spin inline-block w-6 h-6 border-3 border-t-transparent border-indigo-500 rounded-full"></div><p class="mt-2">Завантаження...</p></div>';
+
+            try {
+                /** @type {CityDetailModel} */
+                const city = await getCityById(id);
+                renderCityDetails(city);
+            } catch (error) {
+                closeDetailModal();
+                showMessage(`Помилка: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * Обробляє клік по кнопці "Редагувати".
+         * @param {number} id
+         */
+        async function handleEdit(id) {
+            try {
+                /** @type {CityDetailModel} */
+                const city = await getCityById(id);
+
+                // Заповнення форми
+                cityIdInput.value = city.id;
+                nameInput.value = city.name;
+                slugInput.value = city.slug;
+                countryIdSelect.value = city.countryId.toString();
+                descriptionTextarea.value = city.description || '';
+                imageLinkInput.value = city.imageLink || '';
+
+                modalTitle.textContent = `Редагування Міста: ${city.name}`;
+                openModal();
+            } catch (error) {
+                showMessage(`Помилка завантаження даних для редагування: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * Обробляє клік по кнопці "Видалити".
+         * @param {number} id
+         */
+        function handleDelete(id) {
+            // Замість confirm() використовуємо внутрішнє модальне вікно для підтвердження
+
+            // Створення тимчасового модального вікна підтвердження
+            const city = mockCities.find(c => c.id === id);
+            if (!city) {
+                 showMessage(`Місто з ID ${id} не знайдено.`, 'error');
+                 return;
+            }
+
+            const confirmationModal = document.createElement('div');
+            confirmationModal.className = 'fixed inset-0 bg-gray-900 bg-opacity-75 flex justify-center items-center z-50';
+            confirmationModal.innerHTML = `
+                <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm m-4">
+                    <h3 class="text-xl font-bold mb-4 text-red-600">Підтвердження Видалення</h3>
+                    <p class="mb-6">Ви впевнені, що хочете видалити місто <strong>"${city.name}" (ID: ${id})</strong>? Цю дію не можна скасувати.</p>
+                    <div class="flex justify-end space-x-3">
+                        <button id="cancel-delete" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition duration-150">
+                            Скасувати
+                        </button>
+                        <button id="confirm-delete" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-150">
+                            Видалити
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmationModal);
+
+            // Обробники кнопок
+            document.getElementById('cancel-delete').onclick = () => document.body.removeChild(confirmationModal);
+            document.getElementById('confirm-delete').onclick = async () => {
+                document.body.removeChild(confirmationModal);
+                await executeDelete(id);
+            };
+        }
+
+        /**
+         * Виконання видалення після підтвердження.
+         * @param {number} id
+         */
+        async function executeDelete(id) {
+            try {
+                await deleteCity(id);
+                showMessage(`Місто з ID ${id} успішно видалено.`, 'success');
+                await loadCitiesAndRender();
+            } catch (error) {
+                showMessage(`Помилка видалення: ${error.message}`, 'error');
+            }
+        }
+
+
+        /**
+         * Обробляє відправку форми (Створення або Редагування).
+         * @param {Event} e
+         */
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const isEditing = cityIdInput.value !== '';
+            const cityId = isEditing ? parseInt(cityIdInput.value) : null;
+
+            // Збираємо дані у формат DTO (CityCreateModel або CityUpdateModel)
+            const cityData = {
+                name: nameInput.value.trim(),
+                slug: slugInput.value.trim(),
+                countryId: parseInt(countryIdSelect.value),
+                description: descriptionTextarea.value.trim() || null,
+                imageLink: imageLinkInput.value.trim() || null,
+            };
+
+            closeModal(); // Закриваємо модальне вікно перед операцією
+
+            try {
+                let resultCity;
+                if (isEditing) {
+                    // Оновлення
+                    resultCity = await updateCity(cityId, cityData);
+                    showMessage(`Місто "${resultCity.name}" успішно оновлено!`, 'success');
+                } else {
+                    // Створення
+                    resultCity = await createCity(cityData);
+                    showMessage(`Місто "${resultCity.name}" успішно створено (ID: ${resultCity.id})!`, 'success');
+                }
+
+                await loadCitiesAndRender(); // Перезавантажуємо список після успішної операції
+
+            } catch (error) {
+                showMessage(`Помилка операції: ${error.message}`, 'error');
+            }
+        }
+
+        /**
+         * Головна функція для завантаження та рендерингу списку міст.
+         */
+        async function loadCitiesAndRender() {
+            // Показуємо спінер, поки дані завантажуються
+            cityListContainer.innerHTML = '';
+            loadingSpinner.classList.remove('hidden');
+            cityListContainer.appendChild(loadingSpinner);
+
+
+            try {
+                // Отримуємо дані
+                const cities = await getCities();
+
+                // Приховуємо спінер
+                loadingSpinner.classList.add('hidden');
+
+                // Рендеримо список
+                renderCityList(cities);
+
+            } catch (error) {
+                loadingSpinner.classList.add('hidden');
+                cityListContainer.innerHTML = `
+                    <div class="p-12 text-center bg-red-50 text-red-800 rounded-xl">
+                        <h3 class="text-xl font-semibold mb-2">Помилка Завантаження</h3>
+                        <p>Не вдалося завантажити список міст: ${error.message}</p>
+                    </div>
+                `;
+                showMessage(`Критична помилка завантаження: ${error.message}`, 'error');
+            }
+        }
+
+
+
+        window.onload = loadCitiesAndRender;
+
+        document.getElementById('create-city-btn').addEventListener('click', () => {
+            cityForm.reset();
+            cityIdInput.value = '';
+            modalTitle.textContent = 'Створити Нове Місто';
+            openModal();
+        });
+
+        cityForm.addEventListener('submit', handleFormSubmit);
+
+        window.handleView = handleView;
+        window.handleEdit = handleEdit;
+        window.handleDelete = handleDelete;
+        window.closeDetailModal = closeDetailModal;
+
+    </script>
+</body>
+</html>
