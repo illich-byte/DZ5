@@ -1,13 +1,15 @@
-﻿using Domain.Entities.Location;
+﻿using Domain.Entities; // Для AppUser
+using Domain.Entities.Location;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore; // Використовуємо IdentityDbContext
 using Microsoft.EntityFrameworkCore;
 
-<<<<<<< HEAD
 namespace Domain
 {
     /// <summary>
-    /// Контекст бази даних для застосунку WebApiTransfer.
+    /// Контекст бази даних для застосунку.
+    /// Успадковує від IdentityDbContext для підтримки ASP.NET Identity (AppUser, IdentityRole тощо).
     /// </summary>
-    public class AppDbTransferContext : DbContext
+    public class AppDbTransferContext : IdentityDbContext<AppUser>
     {
         public AppDbTransferContext(DbContextOptions<AppDbTransferContext> options)
             : base(options)
@@ -28,7 +30,17 @@ namespace Domain
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Обов'язковий виклик базового методу IdentityDbContext, 
+            // який налаштовує таблиці Identity (Users, Roles, UserRoles тощо).
             base.OnModelCreating(modelBuilder);
+
+            // Налаштування сутності AppUser (визначення полів IdentityUser)
+            // Таблиця AspNetUsers вже налаштована IdentityDbContext, 
+            // але ми можемо змінити її назву, якщо потрібно.
+            modelBuilder.Entity<AppUser>().ToTable("Users");
+
+
+            // --- Налаштування сутностей Location ---
 
             // Налаштування сутності CountryEntity
             modelBuilder.Entity<CountryEntity>(entity =>
@@ -44,7 +56,7 @@ namespace Domain
                 entity.Property(e => e.Slug).HasMaxLength(100).IsRequired();
                 entity.Property(e => e.Image).HasMaxLength(255); // Шлях до файлу
 
-                // Додавання міст, пов'язаних з країною
+                // Додавання міст, пов'язаних з країною (ЗВ'ЯЗОК 1:М)
                 entity.HasMany(e => e.Cities)
                       .WithOne(c => c.Country)
                       .HasForeignKey(c => c.CountryId)
@@ -64,62 +76,52 @@ namespace Domain
                 entity.Property(e => e.Description).HasMaxLength(500);
             });
 
-            // Запобігання видаленню, якщо є пов'язані об'єкти
+            // --- Початкове заповнення даних (Seed Data) ---
+
+            modelBuilder.Entity<CountryEntity>().HasData(
+                new CountryEntity
+                {
+                    Id = 1,
+                    Name = "Україна",
+                    Code = "UA",
+                    Slug = "ukraine",
+                    Image = "https://flagcdn.com/w320/ua.png"
+                },
+                new CountryEntity
+                {
+                    Id = 2,
+                    Name = "Польща",
+                    Code = "PL",
+                    Slug = "poland",
+                    Image = "https://flagcdn.com/w320/pl.png"
+                },
+                new CountryEntity
+                {
+                    Id = 3,
+                    Name = "Німеччина",
+                    Code = "DE",
+                    Slug = "germany",
+                    Image = "https://flagcdn.com/w320/de.png"
+                },
+                new CountryEntity
+                {
+                    Id = 4,
+                    Name = "Чехія",
+                    Code = "CZ",
+                    Slug = "czech-republic",
+                    Image = "https://flagcdn.com/w320/cz.png"
+                }
+            );
+
+            // --- Загальне правило видалення (як було у HEAD) ---
+
+            // Переконайтеся, що всі зовнішні ключі, які не були явно налаштовані, 
+            // мають поведінку OnDelete(DeleteBehavior.Restrict)
             foreach (var relationship in modelBuilder.Model.GetEntityTypes().SelectMany(e => e.GetForeignKeys()))
             {
+                // Заборона видалення
                 relationship.DeleteBehavior = DeleteBehavior.Restrict;
             }
         }
-=======
-namespace Domain;
-
-public class AppDbTransferContext : DbContext
-{
-    public AppDbTransferContext(DbContextOptions<AppDbTransferContext> options)
-        : base(options)
-    {
-    }
-
-    public DbSet<CountryEntity> Countries { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-        
-        modelBuilder.Entity<CountryEntity>().HasData(
-            new CountryEntity
-            {
-                Id = 1,
-                Name = "Україна",
-                Code = "UA",
-                Slug = "ukraine",
-                Image = "https://flagcdn.com/w320/ua.png"
-            },
-            new CountryEntity
-            {
-                Id = 2,
-                Name = "Польща",
-                Code = "PL",
-                Slug = "poland",
-                Image = "https://flagcdn.com/w320/pl.png"
-            },
-            new CountryEntity
-            {
-                Id = 3,
-                Name = "Німеччина",
-                Code = "DE",
-                Slug = "germany",
-                Image = "https://flagcdn.com/w320/de.png"
-            },
-            new CountryEntity
-            {
-                Id = 4,
-                Name = "Чехія",
-                Code = "CZ",
-                Slug = "czech-republic",
-                Image = "https://flagcdn.com/w320/cz.png"
-            }
-        );
->>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
     }
 }

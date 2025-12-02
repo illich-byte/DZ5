@@ -23,87 +23,83 @@ namespace Domain.Migrations
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Domain.Entities.Location.CountryEntity", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+            {
+                b.Property<int>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("integer");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
+                b.Property<string>("Code")
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .HasColumnType("character varying(10)");
 
-                    b.Property<DateTime>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
+                b.Property<DateTime>("DateCreated")
+                    .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Image")
-                        .HasColumnType("text");
+                b.Property<string>("Image")
+                    .HasColumnType("text");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                b.Property<bool>("IsDeleted")
+                    .HasColumnType("boolean");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                b.Property<string>("Name")
+                    .IsRequired()
+                    .HasMaxLength(250)
+                    .HasColumnType("character varying(250)");
 
-                    b.Property<string>("Slug")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                b.Property<string>("Slug")
+                    .IsRequired()
+                    .HasMaxLength(250)
+                    .HasColumnType("character varying(250)");
 
-                    b.HasKey("Id");
+                b.HasKey("Id");
 
-                    b.ToTable("tblCountries");
-<<<<<<< HEAD
+                b.ToTable("tblCountries");
 
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Code = "UA",
-                            DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 845, DateTimeKind.Utc).AddTicks(1501),
-                            Image = "https://flagcdn.com/w320/ua.png",
-                            IsDeleted = false,
-                            Name = "Україна",
-                            Slug = "ukraine"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Code = "PL",
-                            DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 848, DateTimeKind.Utc).AddTicks(6548),
-                            Image = "https://flagcdn.com/w320/pl.png",
-                            IsDeleted = false,
-                            Name = "Польща",
-                            Slug = "poland"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Code = "DE",
-                            DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 848, DateTimeKind.Utc).AddTicks(6594),
-                            Image = "https://flagcdn.com/w320/de.png",
-                            IsDeleted = false,
-                            Name = "Німеччина",
-                            Slug = "germany"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Code = "CZ",
-                            DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 848, DateTimeKind.Utc).AddTicks(6600),
-                            Image = "https://flagcdn.com/w320/cz.png",
-                            IsDeleted = false,
-                            Name = "Чехія",
-                            Slug = "czech-republic"
-                        });
-=======
->>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
-                });
-#pragma warning restore 612, 618
+                b.HasData(
+                    new
+                    {
+                        Id = 1,
+                        Code = "UA",
+                        DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 845, DateTimeKind.Utc).AddTicks(1501),
+                        Image = "https://flagcdn.com/w320/ua.png",
+                        IsDeleted = false,
+                        Name = "Україна",
+                        Slug = "ukraine"
+                    },
+                    new
+                    {
+                        Id = 2,
+                        Code = "PL",
+                        DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 848, DateTimeKind.Utc).AddTicks(6548),
+                        Image = "https://flagcdn.com/w320/pl.png",
+                        IsDeleted = false,
+                        Name = "Польща",
+                        Slug = "poland"
+                    },
+                    new
+                    {
+                        Id = 3,
+                        Code = "DE",
+                        DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 848, DateTimeKind.Utc).AddTicks(6594),
+                        Image = "https://flagcdn.com/w320/de.png",
+                        IsDeleted = false,
+                        Name = "Німеччина",
+                        Slug = "germany"
+                    },
+                    new
+                    {
+                        Id = 4,
+                        Code = "CZ",
+                        DateCreated = new DateTime(2025, 11, 26, 21, 52, 57, 848, DateTimeKind.Utc).AddTicks(6600),
+                        Image = "https://flagcdn.com/w320/cz.png",
+                        IsDeleted = false,
+                        Name = "Чехія",
+                        Slug = "czech-republic"
+                    });
+            });
         }
     }
 }

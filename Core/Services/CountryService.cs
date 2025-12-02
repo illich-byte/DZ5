@@ -5,20 +5,14 @@ using Core.Models.Location;
 using Domain;
 using Domain.Entities.Location;
 using Microsoft.EntityFrameworkCore;
-<<<<<<< HEAD
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Core.Services;
-
-public class CountryService(AppDbTransferContext appDbContext,
-=======
 
 namespace Core.Services;
 
 public class CountryService(AppDbTransferContext appDbContext, 
->>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
     IImageService imageService,
     IMapper mapper) : ICountryService
 {
@@ -37,11 +31,8 @@ public class CountryService(AppDbTransferContext appDbContext,
 
     public async Task<List<CountryItemModel>> GetListAsync()
     {
-<<<<<<< HEAD
-        var list = await appDbContext.Countries
-=======
+
         var list  = await appDbContext.Countries
->>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
             .ProjectTo<CountryItemModel>(mapper.ConfigurationProvider)
             .ToListAsync();
         return list;
@@ -68,10 +59,6 @@ public class CountryService(AppDbTransferContext appDbContext,
             entity.Image = await imageService.UploadImageAsync(model.Image);
         }
 
-<<<<<<< HEAD
-=======
-        //appDbContext.Countries.Update(entity);
->>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
         await appDbContext.SaveChangesAsync();
 
         var item = mapper.Map<CountryItemModel>(entity);
@@ -88,28 +75,19 @@ public class CountryService(AppDbTransferContext appDbContext,
             await appDbContext.SaveChangesAsync();
         }
     }
-<<<<<<< HEAD
-
-    // НОВА РЕАЛІЗАЦІЯ, ЯКОЇ НЕ ВИСТАЧАЛО:
-    /// <summary>
-    /// Отримати список країн для випадаючого списку (тільки ID та Name).
-    /// </summary>
     public async Task<List<CountryDropdownModel>> GetCountriesForDropdownAsync()
     {
-        // Оптимізована вибірка даних для dropdown
         var list = await appDbContext.Countries
-            .Where(c => !c.IsDeleted) // Важливо: вибираємо лише не видалені
+            .Where(c => !c.IsDeleted) 
             .Select(c => new CountryDropdownModel
             {
                 Id = c.Id,
                 Name = c.Name
             })
-            .OrderBy(c => c.Name) // Сортування за назвою
+            .OrderBy(c => c.Name) 
             .ToListAsync();
 
         return list;
     }
 }
-=======
-}
->>>>>>> aea59e1b4ac8a1b0e26c6e93adb7a6774902ac26
+
